@@ -1,11 +1,12 @@
-using System.ComponentModel;
-using System.Data;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using MassTransit;
-using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Play.Catalog.Service.Entities;
+using Play.Catalog.Contracts;
 using Play.Catalog.Service.Models;
+using Play.Catalog.Service.Entities;
 using Play.Common;
 using static Play.Catalog.Contracts.Contracts;
 
@@ -18,8 +19,7 @@ namespace Play.Catalog.Service.Controllers
         private readonly IRepository<Item> itemsRepository;
         private readonly IPublishEndpoint publishEndpoint;
 
-        public ItemsController(IRepository<Item> itemsRepository,
-                                IPublishEndpoint publishEndpoint)
+        public ItemsController(IRepository<Item> itemsRepository, IPublishEndpoint publishEndpoint)
         {
             this.itemsRepository = itemsRepository;
             this.publishEndpoint = publishEndpoint;
@@ -34,6 +34,7 @@ namespace Play.Catalog.Service.Controllers
             return Ok(items);
         }
 
+        // GET /items/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<ItemDto>> GetByIdAsync(Guid id)
         {
@@ -47,6 +48,7 @@ namespace Play.Catalog.Service.Controllers
             return item.AsDto();
         }
 
+        // POST /items
         [HttpPost]
         public async Task<ActionResult<ItemDto>> PostAsync(CreateItemDto createItemDto)
         {
@@ -57,13 +59,15 @@ namespace Play.Catalog.Service.Controllers
                 Price = createItemDto.Price,
                 CreatedDate = DateTimeOffset.UtcNow
             };
+
             await itemsRepository.CreateAsync(item);
 
             await publishEndpoint.Publish(new CatalogItemCreated(item.Id, item.Name, item.Description));
 
-            return CreatedAtAction(nameof(GetByIdAsync), new { id = item.Name }, item);
+            return CreatedAtAction(nameof(GetByIdAsync), new { id = item.Id }, item);
         }
 
+        // PUT /items/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> PutAsync(Guid id, UpdateItemDto updateItemDto)
         {
@@ -85,6 +89,7 @@ namespace Play.Catalog.Service.Controllers
             return NoContent();
         }
 
+        // DELETE /items/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAsync(Guid id)
         {
