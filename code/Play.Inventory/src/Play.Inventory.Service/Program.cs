@@ -6,6 +6,8 @@ using Play.Inventory.Service.Entities;
 using Polly;
 using Polly.Timeout;
 
+var AllowedOriginSetting = "AllowedOrigin";
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -62,6 +64,16 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    app.UseCors(corsBuilder =>
+   {
+       var configuration = new ConfigurationBuilder().AddJsonFile("appsettings.Development.json", false, false)
+                                                   .Build();
+
+       corsBuilder.WithOrigins(configuration[AllowedOriginSetting])
+               .AllowAnyHeader()
+               .AllowAnyMethod();
+   });
 }
 
 app.UseHttpsRedirection();
